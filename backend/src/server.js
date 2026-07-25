@@ -7,6 +7,7 @@ const authRoutes = require("./routes/authRoutes");
 const customerRoutes = require("./routes/customerRoutes");
 const policyRoutes = require("./routes/policyRoutes");
 const claimRoutes = require("./routes/claimRoutes");
+const documentRoutes = require("./routes/documentRoutes");
 
 
 const app = express();
@@ -15,7 +16,8 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/customers", customerRoutes);
 app.use("/api/policies", policyRoutes);
-// app.use("/api/claims", claimRoutes);
+app.use("/api/claims", claimRoutes);
+app.use("/api/documents", documentRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Insurance Management Platform API is running" });
