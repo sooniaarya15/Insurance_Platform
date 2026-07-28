@@ -22,6 +22,11 @@ export function AuthProvider({ children }) {
     return res.data;
   }
 
+  async function resetPassword(email, newPassword) {
+    const res = await api.post("/auth/reset-password", { email, newPassword });
+    return res.data;
+  }
+
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -29,7 +34,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
