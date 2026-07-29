@@ -1,8 +1,22 @@
 const prisma = require("../config/db");
 
+async function getCustomerForUser(userId) {
+  return prisma.customer.findUnique({ where: { userId } });
+}
+
+// CUSTOMER pays for own policy; ADMIN/AGENT can record on behalf of anyone
 async function recordPayment(req, res) {
   try {
     const { policyId, amount, paymentStatus, paymentDate } = req.body;
+
+    if (req.user.role === "CUSTOMER") {
+      const customer = await getCustomerForUser(req.user.id);
+      const policy = await prisma.policy.findUnique({ where: { id: Number(policyId) } });
+      if (!customer || !policy || policy.customerId !== customer.id) {
+        return res.status(403).json({ message: "You can only pay for your own policies" });
+      }
+    }
+
     const payment = await prisma.premiumPayment.create({
       data: {
         policyId: Number(policyId),
@@ -20,9 +34,17 @@ async function recordPayment(req, res) {
 async function getPayments(req, res) {
   try {
     const { policyId } = req.query;
+    let where = policyId ? { policyId: Number(policyId) } : {};
+
+    if (req.user.role === "CUSTOMER") {
+      const customer = await getCustomerForUser(req.user.id);
+      if (!customer) return res.json([]);
+      where.policy = { customerId: customer.id };
+    }
+
     const payments = await prisma.premiumPayment.findMany({
-      where: policyId ? { policyId: Number(policyId) } : undefined,
-      include: { policy: { include: { customer: true } } },
+      where,
+      include: { policy: { include: { customer: true, plan: true } } },
       orderBy: { id: "desc" },
     });
     res.json(payments);
@@ -31,25 +53,4 @@ async function getPayments(req, res) {
   }
 }
 
-async function getOverdueAlerts(req, res) {
-  try {
-    const activePolicies = await prisma.policy.findMany({
-      where: { status: "ACTIVE" },
-      include: { payments: { orderBy: { paymentDate: "desc" }, take: 1 }, customer: true },
-    });
-
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const overdue = activePolicies.filter((p) => {
-      if (p.payments.length === 0) return true;
-      return new Date(p.payments[0].paymentDate) < thirtyDaysAgo;
-    });
-
-    res.json(overdue);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching overdue alerts", error: err.message });
-  }
-}
-
-module.exports = { recordPayment, getPayments, getOverdueAlerts };
+module.exports = { recordPayment, getPayments };
