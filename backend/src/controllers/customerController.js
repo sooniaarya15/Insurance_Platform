@@ -1,16 +1,11 @@
 const prisma = require("../config/db");
 
+// ADMIN/AGENT — manually add a customer (no login account, just a record)
 async function createCustomer(req, res) {
   try {
     const { name, dob, phone, address, email } = req.body;
     const customer = await prisma.customer.create({
-      data: {
-        name,
-        dob: dob ? new Date(dob) : null,
-        phone,
-        address,
-        email,
-      },
+      data: { name, dob: dob ? new Date(dob) : null, phone, address, email },
     });
     res.status(201).json(customer);
   } catch (err) {
@@ -18,6 +13,7 @@ async function createCustomer(req, res) {
   }
 }
 
+// ADMIN/AGENT only — list of all customers
 async function getCustomers(req, res) {
   try {
     const { search } = req.query;
@@ -42,7 +38,7 @@ async function getCustomerById(req, res) {
   try {
     const customer = await prisma.customer.findUnique({
       where: { id: Number(req.params.id) },
-      include: { policies: true, documents: true },
+      include: { policies: { include: { plan: true } }, documents: true },
     });
     if (!customer) return res.status(404).json({ message: "Customer not found" });
     res.json(customer);
@@ -56,13 +52,7 @@ async function updateCustomer(req, res) {
     const { name, dob, phone, address, email } = req.body;
     const customer = await prisma.customer.update({
       where: { id: Number(req.params.id) },
-      data: {
-        name,
-        dob: dob ? new Date(dob) : undefined,
-        phone,
-        address,
-        email,
-      },
+      data: { name, dob: dob ? new Date(dob) : undefined, phone, address, email },
     });
     res.json(customer);
   } catch (err) {
@@ -79,4 +69,40 @@ async function deleteCustomer(req, res) {
   }
 }
 
-module.exports = { createCustomer, getCustomers, getCustomerById, updateCustomer, deleteCustomer };
+// CUSTOMER — view own profile
+async function getMyProfile(req, res) {
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { userId: req.user.id },
+      include: { policies: { include: { plan: true } } },
+    });
+    if (!customer) return res.status(404).json({ message: "Customer profile not found" });
+    res.json(customer);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching profile", error: err.message });
+  }
+}
+
+// CUSTOMER — update own profile (not email, to keep it simple/safe)
+async function updateMyProfile(req, res) {
+  try {
+    const { name, phone, address, dob } = req.body;
+    const customer = await prisma.customer.update({
+      where: { userId: req.user.id },
+      data: { name, phone, address, dob: dob ? new Date(dob) : undefined },
+    });
+    res.json(customer);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating profile", error: err.message });
+  }
+}
+
+module.exports = {
+  createCustomer,
+  getCustomers,
+  getCustomerById,
+  updateCustomer,
+  deleteCustomer,
+  getMyProfile,
+  updateMyProfile,
+};
