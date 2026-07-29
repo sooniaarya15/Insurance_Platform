@@ -16,6 +16,7 @@ CREATE TABLE "public"."User" (
 -- CreateTable
 CREATE TABLE "public"."Customer" (
     "id" SERIAL NOT NULL,
+    "userId" INTEGER,
     "name" TEXT NOT NULL,
     "dob" TIMESTAMP(3),
     "phone" TEXT,
@@ -27,15 +28,29 @@ CREATE TABLE "public"."Customer" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."PolicyPlan" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "description" TEXT,
+    "premiumAmount" DOUBLE PRECISION NOT NULL,
+    "coverageAmount" DOUBLE PRECISION NOT NULL,
+    "durationMonths" INTEGER NOT NULL DEFAULT 12,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PolicyPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."Policy" (
     "id" SERIAL NOT NULL,
     "customerId" INTEGER NOT NULL,
-    "policyType" TEXT NOT NULL,
-    "policyNumber" TEXT NOT NULL,
+    "planId" INTEGER NOT NULL,
+    "policyNumber" TEXT,
     "premiumAmount" DOUBLE PRECISION NOT NULL,
-    "startDate" TIMESTAMP(3) NOT NULL,
-    "endDate" TIMESTAMP(3) NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "startDate" TIMESTAMP(3),
+    "endDate" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Policy_pkey" PRIMARY KEY ("id")
@@ -79,13 +94,22 @@ CREATE TABLE "public"."Document" (
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Customer_userId_key" ON "public"."Customer"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Customer_email_key" ON "public"."Customer"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Policy_policyNumber_key" ON "public"."Policy"("policyNumber");
 
 -- AddForeignKey
+ALTER TABLE "public"."Customer" ADD CONSTRAINT "Customer_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."Policy" ADD CONSTRAINT "Policy_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "public"."Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Policy" ADD CONSTRAINT "Policy_planId_fkey" FOREIGN KEY ("planId") REFERENCES "public"."PolicyPlan"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Claim" ADD CONSTRAINT "Claim_policyId_fkey" FOREIGN KEY ("policyId") REFERENCES "public"."Policy"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

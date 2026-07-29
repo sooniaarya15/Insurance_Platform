@@ -5,6 +5,7 @@ const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
 const customerRoutes = require("./routes/customerRoutes");
+const policyPlanRoutes = require("./routes/policyPlanRoutes");
 const policyRoutes = require("./routes/policyRoutes");
 const claimRoutes = require("./routes/claimRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/policy-plans", policyPlanRoutes);
 app.use("/api/policies", policyRoutes);
 app.use("/api/claims", claimRoutes);
 app.use("/api/payments", paymentRoutes);
