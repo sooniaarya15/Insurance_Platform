@@ -66,7 +66,7 @@ export default function Login() {
 
         <div className="text-right mb-4">
           <Link to="/reset-password" className="text-sm text-blue-700 hover:underline">
-            Forgot password? Reset it here    
+            Forgot password? Reset it here
           </Link>
         </div>
 

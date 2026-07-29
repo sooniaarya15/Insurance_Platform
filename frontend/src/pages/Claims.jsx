@@ -17,7 +17,7 @@ export default function Claims() {
 
   useEffect(() => {
     loadClaims();
-    api.get("/policies").then((res) => setPolicies(res.data)).catch(() => {});
+    api.get("/policies").then((res) => setPolicies(res.data.filter((p) => p.status === "ACTIVE"))).catch(() => {});
   }, []);
 
   function handleChange(e) {
@@ -45,14 +45,14 @@ export default function Claims() {
     <div>
       <Navbar />
       <div className="p-6 max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Claims</h1>
+        <h1 className="text-2xl font-bold mb-6">{canReview ? "All Claims" : "My Claims"}</h1>
 
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {error && <p className="text-red-600 sm:col-span-3 text-sm">{error}</p>}
           <select name="policyId" className="border rounded px-3 py-2" value={form.policyId} onChange={handleChange} required>
             <option value="">Select policy</option>
             {policies.map((p) => (
-              <option key={p.id} value={p.id}>{p.policyNumber} — {p.customer?.name}</option>
+              <option key={p.id} value={p.id}>{p.policyNumber} — {p.plan?.name}</option>
             ))}
           </select>
           <input type="number" name="claimAmount" placeholder="Claim amount" className="border rounded px-3 py-2" value={form.claimAmount} onChange={handleChange} required />
@@ -67,7 +67,7 @@ export default function Claims() {
             <thead className="bg-gray-100">
               <tr>
                 <th className="text-left px-4 py-2">Policy #</th>
-                <th className="text-left px-4 py-2">Customer</th>
+                {canReview && <th className="text-left px-4 py-2">Customer</th>}
                 <th className="text-left px-4 py-2">Amount</th>
                 <th className="text-left px-4 py-2">Reason</th>
                 <th className="text-left px-4 py-2">Status</th>
@@ -78,7 +78,7 @@ export default function Claims() {
               {claims.map((c) => (
                 <tr key={c.id} className="border-t">
                   <td className="px-4 py-2">{c.policy?.policyNumber}</td>
-                  <td className="px-4 py-2">{c.policy?.customer?.name}</td>
+                  {canReview && <td className="px-4 py-2">{c.policy?.customer?.name}</td>}
                   <td className="px-4 py-2">₹{c.claimAmount}</td>
                   <td className="px-4 py-2">{c.reason}</td>
                   <td className="px-4 py-2">
@@ -100,7 +100,7 @@ export default function Claims() {
               ))}
               {claims.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-4 text-center text-gray-500">No claims yet</td>
+                  <td colSpan={6} className="px-4 py-4 text-center text-gray-500">No claims found</td>
                 </tr>
               )}
             </tbody>

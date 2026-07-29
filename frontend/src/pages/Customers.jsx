@@ -8,7 +8,7 @@ export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", dob: "" });
   const [error, setError] = useState("");
-  const canManage = user.role === "ADMIN" || user.role === "AGENT";
+  const canDelete = user.role === "ADMIN";
 
   function loadCustomers() {
     api.get("/customers").then((res) => setCustomers(res.data)).catch(() => {});
@@ -46,19 +46,17 @@ export default function Customers() {
       <div className="p-6 max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Customers</h1>
 
-        {canManage && (
-          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {error && <p className="text-red-600 col-span-2 text-sm">{error}</p>}
-            <input name="name" placeholder="Full name" className="border rounded px-3 py-2" value={form.name} onChange={handleChange} required />
-            <input type="email" name="email" placeholder="Email" className="border rounded px-3 py-2" value={form.email} onChange={handleChange} required />
-            <input name="phone" placeholder="Phone" className="border rounded px-3 py-2" value={form.phone} onChange={handleChange} />
-            <input type="date" name="dob" placeholder="Date of birth" className="border rounded px-3 py-2" value={form.dob} onChange={handleChange} />
-            <input name="address" placeholder="Address" className="border rounded px-3 py-2 sm:col-span-2" value={form.address} onChange={handleChange} />
-            <button className="sm:col-span-2 bg-blue-700 hover:bg-blue-800 text-white py-2 rounded font-medium">
-              Add Customer
-            </button>
-          </form>
-        )}
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {error && <p className="text-red-600 col-span-2 text-sm">{error}</p>}
+          <input name="name" placeholder="Full name" className="border rounded px-3 py-2" value={form.name} onChange={handleChange} required />
+          <input type="email" name="email" placeholder="Email" className="border rounded px-3 py-2" value={form.email} onChange={handleChange} required />
+          <input name="phone" placeholder="Phone" className="border rounded px-3 py-2" value={form.phone} onChange={handleChange} />
+          <input type="date" name="dob" className="border rounded px-3 py-2" value={form.dob} onChange={handleChange} />
+          <input name="address" placeholder="Address" className="border rounded px-3 py-2 sm:col-span-2" value={form.address} onChange={handleChange} />
+          <button className="sm:col-span-2 bg-blue-700 hover:bg-blue-800 text-white py-2 rounded font-medium">
+            Add Customer
+          </button>
+        </form>
 
         <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -68,7 +66,7 @@ export default function Customers() {
                 <th className="text-left px-4 py-2">Email</th>
                 <th className="text-left px-4 py-2">Phone</th>
                 <th className="text-left px-4 py-2">Address</th>
-                {canManage && <th className="px-4 py-2">Actions</th>}
+                {canDelete && <th className="px-4 py-2">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -78,7 +76,7 @@ export default function Customers() {
                   <td className="px-4 py-2">{c.email}</td>
                   <td className="px-4 py-2">{c.phone}</td>
                   <td className="px-4 py-2">{c.address}</td>
-                  {canManage && (
+                  {canDelete && (
                     <td className="px-4 py-2 text-center">
                       <button onClick={() => handleDelete(c.id)} className="text-red-600 hover:underline">
                         Delete

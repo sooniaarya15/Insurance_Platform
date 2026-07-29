@@ -17,13 +17,20 @@ export function AuthProvider({ children }) {
     return res.data.user;
   }
 
-  async function register(name, email, password, role) {
-    const res = await api.post("/auth/register", { name, email, password, role });
+  async function register(name, email, password) {
+    // Public self-registration always creates a CUSTOMER account
+    const res = await api.post("/auth/register", { name, email, password });
     return res.data;
   }
 
   async function resetPassword(email, newPassword) {
     const res = await api.post("/auth/reset-password", { email, newPassword });
+    return res.data;
+  }
+
+  async function createStaff(name, email, password, role) {
+    // Admin-only: create AGENT or ADMIN accounts
+    const res = await api.post("/auth/create-staff", { name, email, password, role });
     return res.data;
   }
 
@@ -34,7 +41,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, resetPassword }}>
+    <AuthContext.Provider value={{ user, login, register, logout, resetPassword, createStaff }}>
       {children}
     </AuthContext.Provider>
   );

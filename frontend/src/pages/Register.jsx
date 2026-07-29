@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 const NAME_REGEX = /^[A-Za-z\s]*$/;
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "CUSTOMER" });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -35,7 +35,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      await register(form.name, form.email, form.password, form.role);
+      await register(form.name, form.email, form.password);
       setSuccess("Account created! Redirecting to login...");
       setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
@@ -54,7 +54,8 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-700">Create Account</h1>
+        <h1 className="text-2xl font-bold mb-1 text-center text-blue-700">Create Account</h1>
+        <p className="text-xs text-gray-500 text-center mb-6">Sign up as a Customer</p>
         {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
         {success && <p className="text-green-600 text-sm mb-4">{success}</p>}
 
@@ -94,14 +95,7 @@ export default function Register() {
             {showPassword ? "Hide" : "Show"}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mb-4">Minimum 6 characters</p>
-
-        <label className="block text-sm font-medium mb-1">Role</label>
-        <select name="role" className="w-full border rounded px-3 py-2 mb-6" value={form.role} onChange={handleChange}>
-          <option value="CUSTOMER">Customer</option>
-          <option value="AGENT">Insurance Agent</option>
-          <option value="ADMIN">Administrator</option>
-        </select>
+        <p className="text-xs text-gray-500 mb-6">Minimum 6 characters</p>
 
         <button disabled={loading} className="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded font-medium disabled:opacity-60">
           {loading ? "Registering..." : "Register"}

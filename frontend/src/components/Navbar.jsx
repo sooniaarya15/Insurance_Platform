@@ -13,15 +13,37 @@ export default function Navbar() {
 
   if (!user) return null;
 
+  const isAdmin = user.role === "ADMIN";
+  const isAgent = user.role === "AGENT";
+  const isCustomer = user.role === "CUSTOMER";
+
   return (
-    <nav className="bg-blue-700 text-white px-6 py-3 flex items-center justify-between shadow">
-      <div className="flex items-center gap-6">
+    <nav className="bg-blue-700 text-white px-6 py-3 flex items-center justify-between shadow flex-wrap gap-2">
+      <div className="flex items-center gap-5 flex-wrap">
         <span className="font-bold text-lg">Insurance Platform</span>
         <Link to="/dashboard" className="hover:underline">Dashboard</Link>
-        <Link to="/customers" className="hover:underline">Customers</Link>
-        <Link to="/policies" className="hover:underline">Policies</Link>
-        <Link to="/claims" className="hover:underline">Claims</Link>
-        <Link to="/payments" className="hover:underline">Payments</Link>
+
+        {(isAdmin || isAgent) && (
+          <>
+            <Link to="/customers" className="hover:underline">Customers</Link>
+            <Link to="/policy-plans" className="hover:underline">Policy Plans</Link>
+            <Link to="/policies" className="hover:underline">Policies</Link>
+            <Link to="/claims" className="hover:underline">Claims</Link>
+            <Link to="/payments" className="hover:underline">Payments</Link>
+          </>
+        )}
+
+        {isAdmin && <Link to="/staff" className="hover:underline">Manage Staff</Link>}
+
+        {isCustomer && (
+          <>
+            <Link to="/my-profile" className="hover:underline">My Profile</Link>
+            <Link to="/browse-plans" className="hover:underline">Browse Plans</Link>
+            <Link to="/policies" className="hover:underline">My Policies</Link>
+            <Link to="/claims" className="hover:underline">My Claims</Link>
+            <Link to="/payments" className="hover:underline">Payments</Link>
+          </>
+        )}
       </div>
       <div className="flex items-center gap-4">
         <span className="text-sm">{user.name} ({user.role})</span>
