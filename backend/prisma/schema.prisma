@@ -15,16 +15,19 @@ enum Role {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   name      String
-  email     String   @unique
+  email     String    @unique
   password  String
-  role      Role     @default(CUSTOMER)
-  createdAt DateTime @default(now())
+  role      Role      @default(CUSTOMER)
+  createdAt DateTime  @default(now())
+  customer  Customer?
 }
 
 model Customer {
   id        Int        @id @default(autoincrement())
+  userId    Int?       @unique
+  user      User?      @relation(fields: [userId], references: [id])
   name      String
   dob       DateTime?
   phone     String?
@@ -35,16 +38,29 @@ model Customer {
   documents Document[]
 }
 
+model PolicyPlan {
+  id             Int      @id @default(autoincrement())
+  name           String
+  category       String   // HEALTH, LIFE, VEHICLE, OTHER
+  description    String?
+  premiumAmount  Float
+  coverageAmount Float
+  durationMonths Int      @default(12)
+  createdAt      DateTime @default(now())
+  policies       Policy[]
+}
+
 model Policy {
   id            Int              @id @default(autoincrement())
   customerId    Int
   customer      Customer         @relation(fields: [customerId], references: [id])
-  policyType    String
-  policyNumber  String           @unique
+  planId        Int
+  plan          PolicyPlan       @relation(fields: [planId], references: [id])
+  policyNumber  String?          @unique
   premiumAmount Float
-  startDate     DateTime
-  endDate       DateTime
-  status        String           @default("ACTIVE")
+  startDate     DateTime?
+  endDate       DateTime?
+  status        String           @default("PENDING") // PENDING, ACTIVE, REJECTED, EXPIRED, CANCELLED
   createdAt     DateTime         @default(now())
   claims        Claim[]
   payments      PremiumPayment[]
@@ -56,7 +72,7 @@ model Claim {
   policy         Policy   @relation(fields: [policyId], references: [id])
   claimAmount    Float
   reason         String
-  status         String   @default("PENDING")
+  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED
   submissionDate DateTime @default(now())
 }
 
