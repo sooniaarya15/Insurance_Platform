@@ -2,8 +2,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/db");
 
-// Public self-registration — always creates a CUSTOMER account
-// (role from the request body is ignored here on purpose, for security)
+const nameRegex = /^[A-Za-z\s]+$/;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Public self-registration — always creates a CUSTOMER account (no agent assigned yet)
 async function register(req, res) {
   try {
     const { name, email, password } = req.body;
@@ -11,16 +13,12 @@ async function register(req, res) {
     if (!name || !email || !password) {
       return res.status(400).json({ message: "name, email and password are required" });
     }
-
-    const nameRegex = /^[A-Za-z\s]+$/;
     if (!nameRegex.test(name)) {
       return res.status(400).json({ message: "Name should contain only letters (no numbers or special characters)" });
     }
     if (name.length < 2) {
       return res.status(400).json({ message: "Name must be at least 2 characters long" });
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Please enter a valid email address" });
     }
@@ -35,17 +33,13 @@ async function register(req, res) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the User (role always CUSTOMER for public self-registration),
-    // and immediately link a Customer profile so "My Policies" / "My Profile" work.
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         role: "CUSTOMER",
-        customer: {
-          create: { name, email },
-        },
+        customer: { create: { name, email } },
       },
     });
 
@@ -59,7 +53,7 @@ async function register(req, res) {
   }
 }
 
-// Admin-only: create an AGENT or ADMIN account (no public signup for these roles)
+// ADMIN-only: create AGENT or ADMIN accounts
 async function createStaff(req, res) {
   try {
     const { name, email, password, role } = req.body;
@@ -88,6 +82,84 @@ async function createStaff(req, res) {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
+// ADMIN or AGENT: create a login-enabled CUSTOMER account on someone's behalf.
+// If an AGENT creates it, the customer is auto-assigned to that agent.
+// If an ADMIN creates it, they may optionally pass agentId to assign one.
+async function createCustomerAccount(req, res) {
+  try {
+    const { name, email, password, phone, address, dob, agentId } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "name, email and password are required" });
+    }
+    if (!nameRegex.test(name)) {
+      return res.status(400).json({ message: "Name should contain only letters (no numbers or special characters)" });
+    }
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Decide which agent (if any) this customer belongs to
+    let finalAgentId = null;
+    if (req.user.role === "AGENT") {
+      finalAgentId = req.user.id; // agent creating it is auto-assigned
+    } else if (req.user.role === "ADMIN" && agentId) {
+      finalAgentId = Number(agentId); // admin optionally assigns one
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: "CUSTOMER",
+        customer: {
+          create: {
+            name,
+            email,
+            phone,
+            address,
+            dob: dob ? new Date(dob) : null,
+            agentId: finalAgentId,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      message: "Customer account created successfully",
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
+// ADMIN-only: list all agents (for assignment dropdowns)
+async function getAgents(req, res) {
+  try {
+    const agents = await prisma.user.findMany({
+      where: { role: "AGENT" },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: "asc" },
+    });
+    res.json(agents);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching agents", error: err.message });
   }
 }
 
@@ -148,4 +220,11 @@ async function resetPassword(req, res) {
   }
 }
 
-module.exports = { register, login, resetPassword, createStaff };
+module.exports = {
+  register,
+  login,
+  resetPassword,
+  createStaff,
+  createCustomerAccount,
+  getAgents,
+};

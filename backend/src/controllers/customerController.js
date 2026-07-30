@@ -1,31 +1,24 @@
 const prisma = require("../config/db");
 
-// ADMIN/AGENT — manually add a customer (no login account, just a record)
-async function createCustomer(req, res) {
-  try {
-    const { name, dob, phone, address, email } = req.body;
-    const customer = await prisma.customer.create({
-      data: { name, dob: dob ? new Date(dob) : null, phone, address, email },
-    });
-    res.status(201).json(customer);
-  } catch (err) {
-    res.status(500).json({ message: "Error creating customer", error: err.message });
-  }
-}
-
-// ADMIN/AGENT only — list of all customers
+// ADMIN/AGENT — Admin sees everyone, Agent sees only their assigned customers
 async function getCustomers(req, res) {
   try {
     const { search } = req.query;
+
+    let where = {};
+    if (req.user.role === "AGENT") {
+      where.agentId = req.user.id;
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
     const customers = await prisma.customer.findMany({
-      where: search
-        ? {
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } },
-            ],
-          }
-        : undefined,
+      where,
+      include: { agent: { select: { id: true, name: true } } },
       orderBy: { id: "desc" },
     });
     res.json(customers);
@@ -38,9 +31,15 @@ async function getCustomerById(req, res) {
   try {
     const customer = await prisma.customer.findUnique({
       where: { id: Number(req.params.id) },
-      include: { policies: { include: { plan: true } }, documents: true },
+      include: { policies: { include: { plan: true } }, documents: true, agent: true },
     });
     if (!customer) return res.status(404).json({ message: "Customer not found" });
+
+    // Agent can only view their own assigned customers
+    if (req.user.role === "AGENT" && customer.agentId !== req.user.id) {
+      return res.status(403).json({ message: "Access denied — this customer is not assigned to you" });
+    }
+
     res.json(customer);
   } catch (err) {
     res.status(500).json({ message: "Error fetching customer", error: err.message });
@@ -49,10 +48,17 @@ async function getCustomerById(req, res) {
 
 async function updateCustomer(req, res) {
   try {
-    const { name, dob, phone, address, email } = req.body;
+    const { name, dob, phone, address, email, agentId } = req.body;
+
+    const data = { name, phone, address, email, dob: dob ? new Date(dob) : undefined };
+    // Only Admin can reassign an agent
+    if (req.user.role === "ADMIN" && agentId !== undefined) {
+      data.agentId = agentId ? Number(agentId) : null;
+    }
+
     const customer = await prisma.customer.update({
       where: { id: Number(req.params.id) },
-      data: { name, dob: dob ? new Date(dob) : undefined, phone, address, email },
+      data,
     });
     res.json(customer);
   } catch (err) {
@@ -74,7 +80,7 @@ async function getMyProfile(req, res) {
   try {
     const customer = await prisma.customer.findUnique({
       where: { userId: req.user.id },
-      include: { policies: { include: { plan: true } } },
+      include: { policies: { include: { plan: true } }, agent: { select: { name: true, email: true } } },
     });
     if (!customer) return res.status(404).json({ message: "Customer profile not found" });
     res.json(customer);
@@ -83,7 +89,6 @@ async function getMyProfile(req, res) {
   }
 }
 
-// CUSTOMER — update own profile (not email, to keep it simple/safe)
 async function updateMyProfile(req, res) {
   try {
     const { name, phone, address, dob } = req.body;
@@ -98,7 +103,6 @@ async function updateMyProfile(req, res) {
 }
 
 module.exports = {
-  createCustomer,
   getCustomers,
   getCustomerById,
   updateCustomer,

@@ -15,19 +15,22 @@ enum Role {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String
-  role      Role      @default(CUSTOMER)
-  createdAt DateTime  @default(now())
-  customer  Customer?
+  id              Int        @id @default(autoincrement())
+  name            String
+  email           String     @unique
+  password        String
+  role            Role       @default(CUSTOMER)
+  createdAt       DateTime   @default(now())
+  customer        Customer?
+  assignedCustomers Customer[] @relation("AgentCustomers")
 }
 
 model Customer {
   id        Int        @id @default(autoincrement())
   userId    Int?       @unique
   user      User?      @relation(fields: [userId], references: [id])
+  agentId   Int?
+  agent     User?      @relation("AgentCustomers", fields: [agentId], references: [id])
   name      String
   dob       DateTime?
   phone     String?
@@ -41,7 +44,7 @@ model Customer {
 model PolicyPlan {
   id             Int      @id @default(autoincrement())
   name           String
-  category       String   // HEALTH, LIFE, VEHICLE, OTHER
+  category       String
   description    String?
   premiumAmount  Float
   coverageAmount Float
@@ -60,7 +63,7 @@ model Policy {
   premiumAmount Float
   startDate     DateTime?
   endDate       DateTime?
-  status        String           @default("PENDING") // PENDING, ACTIVE, REJECTED, EXPIRED, CANCELLED
+  status        String           @default("PENDING")
   createdAt     DateTime         @default(now())
   claims        Claim[]
   payments      PremiumPayment[]
@@ -72,7 +75,7 @@ model Claim {
   policy         Policy   @relation(fields: [policyId], references: [id])
   claimAmount    Float
   reason         String
-  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  status         String   @default("PENDING")
   submissionDate DateTime @default(now())
 }
 
