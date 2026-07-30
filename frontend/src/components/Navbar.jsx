@@ -25,7 +25,9 @@ export default function Navbar() {
 
         {(isAdmin || isAgent) && (
           <>
-            <Link to="/customers" className="hover:underline">Customers</Link>
+            <Link to="/customers" className="hover:underline">
+              {isAgent ? "My Customers" : "Customers"}
+            </Link>
             <Link to="/policy-plans" className="hover:underline">Policy Plans</Link>
             <Link to="/policies" className="hover:underline">Policies</Link>
             <Link to="/claims" className="hover:underline">Claims</Link>

@@ -34,6 +34,18 @@ export function AuthProvider({ children }) {
     return res.data;
   }
 
+  async function createCustomerAccount(data) {
+    // Admin/Agent: create a login-enabled Customer account
+    const res = await api.post("/auth/create-customer", data);
+    return res.data;
+  }
+
+  async function getAgents() {
+    // Admin-only: list agents for assignment dropdowns
+    const res = await api.get("/auth/agents");
+    return res.data;
+  }
+
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -41,7 +53,18 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, resetPassword, createStaff }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        resetPassword,
+        createStaff,
+        createCustomerAccount,
+        getAgents,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
