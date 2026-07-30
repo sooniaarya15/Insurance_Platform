@@ -23,7 +23,7 @@ export default function Navbar() {
         <span className="font-bold text-lg">Insurance Platform</span>
         <Link to="/dashboard" className="hover:underline">Dashboard</Link>
 
-        {(isAdmin || isAgent) && (
+        {(isAdmin || isAgent) && (    
           <>
             <Link to="/customers" className="hover:underline">
               {isAgent ? "My Customers" : "Customers"}
