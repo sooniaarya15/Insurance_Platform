@@ -3,6 +3,8 @@ import Navbar from "../components/Navbar";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
+const NAME_REGEX = /^[A-Za-z\s]*$/;
+
 export default function Customers() {
   const { user, createCustomerAccount, getAgents } = useAuth();
   const [customers, setCustomers] = useState([]);
@@ -15,6 +17,8 @@ export default function Customers() {
   const [success, setSuccess] = useState("");
   const isAdmin = user.role === "ADMIN";
   const isAgent = user.role === "AGENT";
+
+  const isNameInvalid = form.name.length > 0 && !NAME_REGEX.test(form.name);
 
   function loadCustomers() {
     api.get("/customers").then((res) => setCustomers(res.data)).catch(() => {});
@@ -35,6 +39,16 @@ export default function Customers() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    if (!NAME_REGEX.test(form.name) || form.name.trim().length === 0) {
+      setError("Name should contain only letters (no numbers or special characters)");
+      return;
+    }
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
     try {
       await createCustomerAccount(form);
       setSuccess("Customer account created — they can now log in with the email and password you set.");
@@ -66,7 +80,20 @@ export default function Customers() {
           {error && <p className="text-red-600 col-span-2 text-sm">{error}</p>}
           {success && <p className="text-green-600 col-span-2 text-sm">{success}</p>}
 
-          <input name="name" placeholder="Full name" className="border rounded px-3 py-2" value={form.name} onChange={handleChange} required />
+          <div>
+            <input
+              name="name"
+              placeholder="Full name"
+              className={`w-full border rounded px-3 py-2 ${isNameInvalid ? "border-red-500" : ""}`}
+              value={form.name}
+              onChange={handleChange}
+              required
+            />
+            {isNameInvalid && (
+              <p className="text-red-600 text-xs mt-1">Invalid: numbers or symbols are not allowed in name</p>
+            )}
+          </div>
+
           <input type="email" name="email" placeholder="Email (used to log in)" className="border rounded px-3 py-2" value={form.email} onChange={handleChange} required />
 
           <div className="relative">
