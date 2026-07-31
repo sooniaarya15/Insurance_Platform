@@ -91,7 +91,6 @@ export default function StaffManagement() {
             </div>
           </div>
 
-        
 
           <div>
             <label className="block text-sm font-medium mb-1">Role</label>
