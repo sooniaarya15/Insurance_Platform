@@ -29,9 +29,9 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
-  }
+  }                
 
-  return (
+  return (   
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
         <h1 className="text-2xl font-bold mb-6 text-center text-blue-700">Sign In</h1>
@@ -39,7 +39,7 @@ export default function Login() {
 
         <label className="block text-sm font-medium mb-1">Email</label>
         <input
-          type="email"
+          type="email" 
           className="w-full border rounded px-3 py-2 mb-4"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
