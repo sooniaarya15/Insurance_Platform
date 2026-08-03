@@ -5,7 +5,7 @@ const prisma = require("../config/db");
 const nameRegex = /^[A-Za-z\s]+$/;
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Public self-registration — always creates a CUSTOMER account (no agent assigned yet)
+// Public self-registration — always creates a CUSTOMER account
 async function register(req, res) {
   try {
     const { name, email, password } = req.body;
@@ -85,12 +85,12 @@ async function createStaff(req, res) {
   }
 }
 
-// ADMIN or AGENT: create a login-enabled CUSTOMER account on someone's behalf.
-// If an AGENT creates it, the customer is auto-assigned to that agent.
-// If an ADMIN creates it, they may optionally pass agentId to assign one.
+// ADMIN/AGENT: create a login-enabled CUSTOMER account
 async function createCustomerAccount(req, res) {
   try {
     const { name, email, password, phone, address, dob, agentId } = req.body;
+
+    console.log("DEBUG — createCustomerAccount received:", { name, email, password: password ? `(${password.length} chars)` : "MISSING" });
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: "name, email and password are required" });
@@ -111,13 +111,13 @@ async function createCustomerAccount(req, res) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("DEBUG — hashed password generated:", hashedPassword.substring(0, 20) + "...");
 
-    // Decide which agent (if any) this customer belongs to
     let finalAgentId = null;
     if (req.user.role === "AGENT") {
-      finalAgentId = req.user.id; // agent creating it is auto-assigned
+      finalAgentId = req.user.id;
     } else if (req.user.role === "ADMIN" && agentId) {
-      finalAgentId = Number(agentId); // admin optionally assigns one
+      finalAgentId = Number(agentId);
     }
 
     const user = await prisma.user.create({
@@ -139,17 +139,18 @@ async function createCustomerAccount(req, res) {
       },
     });
 
+    console.log("DEBUG — customer account created with id:", user.id, "email:", user.email);
+
     res.status(201).json({
       message: "Customer account created successfully",
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {
-    console.error(err);
+    console.error("DEBUG — error in createCustomerAccount:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 }
 
-// ADMIN-only: list all agents (for assignment dropdowns)
 async function getAgents(req, res) {
   try {
     const agents = await prisma.user.findMany({
@@ -163,16 +164,26 @@ async function getAgents(req, res) {
   }
 }
 
+// Login — with debug logging to trace the exact failure point
 async function login(req, res) {
   try {
     const { email, password } = req.body;
 
+    console.log("DEBUG — login attempt for email:", JSON.stringify(email));
+
     const user = await prisma.user.findUnique({ where: { email } });
+    console.log("DEBUG — user found:", user ? user.email : "NOT FOUND");
+
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    console.log("DEBUG — stored password hash:", user.password ? user.password.substring(0, 20) + "..." : "MISSING/NULL");
+    console.log("DEBUG — password entered (length):", password ? password.length : "MISSING");
+
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("DEBUG — password match result:", isMatch);
+
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
@@ -189,7 +200,7 @@ async function login(req, res) {
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {
-    console.error(err);
+    console.error("DEBUG — error in login:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 }
