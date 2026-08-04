@@ -22,7 +22,7 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    setSuccess("");
+    setSuccess(""); 
 
     if (!NAME_REGEX.test(form.name) || form.name.trim().length === 0) {
       setError("Name should contain only letters (no numbers or special characters)");
