@@ -26,7 +26,7 @@ export default function Login() {
       } else {
         setError("Something went wrong: " + err.message);
       }
-    } finally {
+    } finally {  
       setLoading(false);
     }
   }                
